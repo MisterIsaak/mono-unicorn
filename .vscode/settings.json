@@ -1,0 +1,36 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "tsconfig.json": "tsconfig.*.json, env.d.ts",
+    "vite.config.*": "vitest.config.*",
+    "package.json": "pnpm*, .eslint*, eslint*, .oxlint*, .oxfmt*, .editorconfig, knip.json, turbo.json"
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "prettier.enable": false,
+  "[vue]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[javascript]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "oxc.oxc-vscode"
+  },
+  "json.schemaDownload.trustedDomains": {
+    "https://json.schemastore.org": true,
+    "https://schemastore.azurewebsites.net": true,
+    "https://turbo.build": true,
+    "https://unpkg.com": true,
+    "https://www.schemastore.org": true
+  },
+  "chat.tools.terminal.autoApprove": {
+    "pnpm": true
+  }
+}

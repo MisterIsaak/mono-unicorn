@@ -1,0 +1,21 @@
+{
+  "name": "@unicorn/storybook",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "storybook dev -p 6006",
+    "build": "storybook build"
+  },
+  "dependencies": {
+    "@unicorn/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "catalog:",
+    "@storybook/vue3-vite": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "storybook": "catalog:",
+    "vite": "catalog:",
+    "vue": "catalog:"
+  }
+}

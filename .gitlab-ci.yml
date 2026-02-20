@@ -1,0 +1,68 @@
+image: node:24.10.0
+
+variables:
+  TURBO_TELEMETRY_DISABLED: 1
+
+stages:
+  - setup
+  - validate
+  - build
+
+.base:
+  before_script:
+    - corepack enable
+    - pnpm config set store-dir .pnpm-store
+    - pnpm install
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+    policy: pull
+
+warm-cache:
+  stage: setup
+  extends: .base
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+    policy: pull-push
+  script:
+    - echo "Cache warmed"
+  rules:
+    - changes:
+        - pnpm-lock.yaml
+
+format:
+  stage: validate
+  extends: .base
+  script:
+    - pnpm format:check
+
+lint:
+  stage: validate
+  extends: .base
+  script:
+    - pnpm lint
+
+type-check:
+  stage: validate
+  extends: .base
+  script:
+    - pnpm type-check
+
+test:
+  stage: validate
+  extends: .base
+  script:
+    - pnpm test
+
+build:
+  stage: build
+  extends: .base
+  script:
+    - pnpm build

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "packages/ui": {
+      "ignore": ["src/**/*.test.ts"],
+      "ignoreDependencies": ["@vue/test-utils"]
+    },
+    "apps/web": {
+      "ignore": ["env.d.ts"]
+    },
+    "apps/storybook": {
+      "entry": ["stories/**/*.stories.ts"]
+    }
+  }
+}

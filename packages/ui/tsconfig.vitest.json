@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "include": ["src/**/*.test.ts", "src/**/*.vue"],
+  "exclude": [],
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    "types": ["node"],
+    "skipLibCheck": true
+  }
+}

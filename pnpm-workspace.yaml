@@ -1,0 +1,62 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  '@storybook/addon-docs': ^10.1.0
+  '@storybook/vue3-vite': ^10.1.0
+  '@tsconfig/node24': ^24.0.0
+  '@types/node': ^24.0.0
+  '@vitejs/plugin-vue': ^6.0.0
+  '@vitest/eslint-plugin': ^1.6.7
+  '@vue/eslint-config-typescript': ^14.6.0
+  '@vue/test-utils': ^2.4.0
+  '@vue/tsconfig': ^0.8.0
+  eslint: ^9.0.0
+  eslint-config-prettier: ^10.0.0
+  eslint-plugin-oxlint: ~1.46.0
+  eslint-plugin-vue: ~10.7.0
+  jiti: ^2.6.0
+  happy-dom: ^18.0.0
+  knip: ^5.0.0
+  lint-staged: ^16.0.0
+  oxfmt: ^0.32.0
+  oxlint: ~1.47.0
+  simple-git-hooks: ^2.11.0
+  storybook: ^10.1.0
+  turbo: ^2.8.7
+  typescript: ~5.9.0
+  vite: beta
+  vite-plugin-vue-devtools: ^8.0.0
+  vitest: ^4.0.0
+  vue: beta
+  vue-router: ^5.0.0
+  vue-tsc: ^3.2.0
+
+onlyBuiltDependencies:
+  - esbuild
+  - simple-git-hooks
+
+overrides:
+  '@vue/compiler-core': beta
+  '@vue/compiler-dom': beta
+  '@vue/compiler-sfc': beta
+  '@vue/compiler-ssr': beta
+  '@vue/compiler-vapor': beta
+  '@vue/reactivity': beta
+  '@vue/runtime-core': beta
+  '@vue/runtime-dom': beta
+  '@vue/runtime-vapor': beta
+  '@vue/server-renderer': beta
+  '@vue/shared': beta
+  vue: beta
+
+patchedDependencies:
+  vue@3.6.0-beta.5: patches/vue@3.6.0-beta.5.patch
+
+peerDependencyRules:
+  allowAny:
+    - vue
+    - vite
+
+useNodeVersion: 24.10.0

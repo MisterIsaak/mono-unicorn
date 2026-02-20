@@ -1,0 +1,53 @@
+{
+  "name": "@unicorn/monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "oxlint . && eslint . --cache",
+    "lint:fix": "oxlint . --fix && eslint . --fix --cache",
+    "test": "turbo test",
+    "type-check": "vue-tsc --build",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "repo:check": "knip",
+    "prepare": "simple-git-hooks"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "catalog:",
+    "@types/node": "catalog:",
+    "@vitest/eslint-plugin": "catalog:",
+    "@vue/eslint-config-typescript": "catalog:",
+    "@vue/tsconfig": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-oxlint": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "jiti": "catalog:",
+    "knip": "catalog:",
+    "lint-staged": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "simple-git-hooks": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*.{ts,vue}": [
+      "oxlint --fix",
+      "eslint --fix --cache"
+    ],
+    "*": [
+      "oxfmt --no-error-on-unmatched-pattern"
+    ]
+  },
+  "engines": {
+    "node": ">=24.10.0"
+  },
+  "packageManager": "pnpm@10.26.2"
+}

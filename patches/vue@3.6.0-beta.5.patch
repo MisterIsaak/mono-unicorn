@@ -1,0 +1,13 @@
+diff --git a/jsx-runtime/index.d.ts b/jsx-runtime/index.d.ts
+index 7b15b50567cc78f8ea37cc9ee0ccbc381d961287..a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0 100644
+--- a/jsx-runtime/index.d.ts
++++ b/jsx-runtime/index.d.ts
+@@ -17,7 +17,7 @@ export namespace JSX {
+   }
+   export interface IntrinsicElements extends NativeElements {
+     // allow arbitrary elements
+-    // @ts-expect-error suppress ts:2374 = Duplicate string index signature.
++    // @ts-ignore suppress ts:2374 = Duplicate string index signature.
+     [name: string]: any
+   }
+   export interface IntrinsicAttributes extends ReservedProps {}
