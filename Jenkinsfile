@@ -1,4 +1,5 @@
-// Jenkinsfile: release/X.Y branches build rc versions; a gated stage promotes to final.
+// Jenkinsfile: release/X.Y branches build rc versions and deploy them to staging.
+// Promotion to production is a separate job (see Jenkinsfile.promote).
 
 def SERVICES = ['api', 'billing', 'web']
 
@@ -29,6 +30,7 @@ pipeline {
                 env.VERSION = tagNextRc(env.BRANCH_NAME - 'release/')
               }
               currentBuild.displayName = env.VERSION
+              currentBuild.description = "Promote with RC_VERSION=${env.VERSION}"
               echo "Version ${env.VERSION} (${env.BUILT_SHA})"
             }
           }
@@ -64,45 +66,6 @@ pipeline {
         }
       }
     }
-
-    stage('Promote to production') {
-      when {
-        branch pattern: 'release/\\d+\\.\\d+', comparator: 'REGEXP'
-        beforeInput true
-      }
-      options { timeout(time: 7, unit: 'DAYS') }
-      input {
-        message "Promote ${env.VERSION} to production?"
-        ok 'Promote'
-        submitter 'qa-approvers'          // Jenkins user or group allowed to approve
-        submitterParameter 'APPROVER'
-      }
-      agent { label 'linux' }             // allocated only after approval, so no executor is held while waiting
-      steps {
-        checkout scm
-        script {
-          def finalVersion = env.VERSION.replaceFirst(/-rc\.\d+$/, '')
-
-          // Tag the exact commit that was built and tested, not whatever the branch points to now
-          pushTag(env.BUILT_SHA, finalVersion,
-                  "Release ${finalVersion} (promoted from ${env.VERSION}, approved by ${APPROVER})")
-
-          withCredentials([usernamePassword(credentialsId: 'registry-push',
-                                            usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
-            sh 'crane auth login "${REGISTRY%%/*}" -u "$REG_USER" -p "$REG_PASS"'
-          }
-          for (svc in SERVICES) {
-            // Re-tag only: same digest QA approved, nothing rebuilt
-            sh "crane tag ${env.REGISTRY}/${svc}:${env.VERSION} ${finalVersion}"
-            sh "echo \"${svc} ${finalVersion} \$(crane digest ${env.REGISTRY}/${svc}:${finalVersion})\" >> promoted.txt"
-          }
-          archiveArtifacts artifacts: 'promoted.txt'
-
-          sh "./deploy/deploy.sh production ${finalVersion}"
-          currentBuild.displayName = "${env.VERSION} → ${finalVersion}"
-        }
-      }
-    }
   }
 }
 
@@ -133,10 +96,11 @@ String tagNextRc(String line) {
 // Creates an annotated tag and pushes it. If the push fails (e.g. the tag already
 // exists on the server), the local tag is removed so retry() can recompute.
 void pushTag(String commit, String version, String message) {
+  writeFile file: '.tag-message', text: message
   withCredentials([gitUsernamePassword(credentialsId: 'gitlab-release-bot')]) {
     sh """
       git -c user.name='release-bot' -c user.email='release-bot@example.com' \\
-        tag -a 'v${version}' -m '${message}' ${commit}
+        tag -a 'v${version}' -F .tag-message ${commit}
       git push origin 'refs/tags/v${version}' || { git tag -d 'v${version}'; exit 1; }
     """
   }

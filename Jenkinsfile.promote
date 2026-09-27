@@ -1,0 +1,115 @@
+// Jenkinsfile.promote: promotes an approved rc (e.g. 1.3.1-rc.1) to its final version (1.3.1).
+//
+// Job setup:
+//   - Plain Pipeline job (not multibranch), "Pipeline script from SCM", script path Jenkinsfile.promote.
+//   - Restrict the "Build" permission on this job to QA approvers. Running the job is the approval.
+//
+// Nothing is rebuilt: the final git tag goes on the rc's commit and the rc images are re-tagged.
+
+def SERVICES = ['api', 'billing', 'web']
+
+pipeline {
+  agent { label 'linux' }
+
+  parameters {
+    string(name: 'RC_VERSION', defaultValue: '', description: 'Release candidate to promote, e.g. 1.3.1-rc.1')
+  }
+
+  options {
+    disableConcurrentBuilds()
+    buildDiscarder(logRotator(numToKeepStr: '500'))   // promotion history is part of the audit trail
+  }
+
+  environment {
+    REGISTRY = 'registry.example.com/app'
+  }
+
+  stages {
+    stage('Validate') {
+      steps {
+        script {
+          if (!(params.RC_VERSION ==~ /\d+\.\d+\.\d+-rc\.\d+/)) {
+            error "RC_VERSION must look like 1.3.1-rc.1, got '${params.RC_VERSION}'"
+          }
+          env.RC_VERSION = params.RC_VERSION
+          env.FINAL_VERSION = params.RC_VERSION.replaceFirst(/-rc\.\d+$/, '')
+          env.APPROVER = startedBy()
+
+          sh 'git fetch --tags --force --quiet'
+          if (!tagExists("v${env.RC_VERSION}")) {
+            error "Tag v${env.RC_VERSION} does not exist"
+          }
+          if (tagExists("v${env.FINAL_VERSION}")) {
+            error "v${env.FINAL_VERSION} has already been released"
+          }
+
+          // ^{commit} resolves the annotated rc tag to its commit, so the final tag isn't a nested tag
+          env.RELEASE_SHA = sh(script: "git rev-parse 'v${env.RC_VERSION}^{commit}'", returnStdout: true).trim()
+
+          currentBuild.displayName = "${env.RC_VERSION} → ${env.FINAL_VERSION}"
+          currentBuild.description = "Approved by ${env.APPROVER} (${env.RELEASE_SHA.take(8)})"
+        }
+      }
+    }
+
+    stage('Promote images') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'registry-push',
+                                          usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
+          sh 'crane auth login "${REGISTRY%%/*}" -u "$REG_USER" -p "$REG_PASS"'
+        }
+        script {
+          sh 'rm -f promoted.txt'
+          for (svc in SERVICES) {
+            // Re-tag only: same digest QA approved, nothing rebuilt
+            sh "crane tag ${env.REGISTRY}/${svc}:${env.RC_VERSION} ${env.FINAL_VERSION}"
+            sh "echo \"${svc} ${env.FINAL_VERSION} \$(crane digest ${env.REGISTRY}/${svc}:${env.FINAL_VERSION})\" >> promoted.txt"
+          }
+        }
+        archiveArtifacts artifacts: 'promoted.txt'
+      }
+    }
+
+    stage('Deploy to production') {
+      steps {
+        sh "./deploy/deploy.sh production ${env.FINAL_VERSION}"
+      }
+    }
+
+    // Tagged last, so the final tag only exists once production is actually running this version.
+    // If an earlier stage fails, the job can simply be rerun with the same RC_VERSION.
+    stage('Tag release') {
+      steps {
+        script {
+          pushTag(env.RELEASE_SHA, env.FINAL_VERSION,
+                  "Release ${env.FINAL_VERSION}\n\nPromoted from ${env.RC_VERSION}\nApproved by ${env.APPROVER}\nBuild ${env.BUILD_URL}")
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+boolean tagExists(String tag) {
+  return sh(script: "git rev-parse -q --verify 'refs/tags/${tag}' >/dev/null", returnStatus: true) == 0
+}
+
+String startedBy() {
+  def causes = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause')
+  return causes ? causes[0].userId : 'unknown'
+}
+
+// Creates an annotated tag on the given commit and pushes it.
+void pushTag(String commit, String version, String message) {
+  writeFile file: '.tag-message', text: message
+  withCredentials([gitUsernamePassword(credentialsId: 'gitlab-release-bot')]) {
+    sh """
+      git -c user.name='release-bot' -c user.email='release-bot@example.com' \\
+        tag -a 'v${version}' -F .tag-message ${commit}
+      git push origin 'refs/tags/v${version}' || { git tag -d 'v${version}'; exit 1; }
+    """
+  }
+}
